@@ -4,6 +4,8 @@ var training_data = JSON.parse(fs.readFileSync('../annotations/captions_train201
 var validation_data = JSON.parse(fs.readFileSync('../annotations/captions_val2014.json', 'utf8'));
 var total = 0.0;
 var count = 0;
+// Represents the n-gram constant
+var NGRAM_CONST = 3;
 var calcBleuScore = function(data) {
   var annotations = data["annotations"];
   var map = {};
@@ -16,13 +18,32 @@ var calcBleuScore = function(data) {
     }
   }
   for (key in map) {
-    count += 1;
-    var cur_score = VG.bleu_score(map[key][0], map[key][1], 3);
-    total += cur_score;
+    var pairs= pairwise(map[key]);
+    pairs.forEach(function(elem) {
+      count += 1;
+      var cur_score = VG.bleu_score(elem[0], elem[1], NGRAM_CONST);
+      total += cur_score;
+    })
   }
   console.log("n="+count);
   console.log("bleu score ="+total/count);
   return total/count;
 };
+
+function pairwise(list) {
+  var pairs = [];
+  list
+    .slice(0, list.length - 1)
+    .forEach(function (first, n) {
+      var tail = list.slice(n + 1, list.length);
+      tail.forEach(function (item) {
+        pairs.push([first, item])
+      });
+    })
+  return pairs;
+}
+
+console.log("TRAINING:");
 calcBleuScore(training_data);
+console.log("VALIDATION:");
 calcBleuScore(validation_data);
